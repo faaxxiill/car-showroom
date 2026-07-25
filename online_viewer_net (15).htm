@@ -1,0 +1,1471 @@
+Viewed index.html:1-800
+Viewed index.html:801-1463
+
+Here is the complete single-file HTML, CSS, and 3D WebGL JavaScript code for your **3D Car Showroom**. 
+
+You can save this code as `index.html` and open it directly in any modern web browser.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APEX MOTORS | 3D Luxury Car Showroom</title>
+  <meta name="description" content="Experience high-performance luxury vehicles in an interactive 3D virtual showroom. Customize paint, wheels, lighting, and preview specifications in real-time.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Three.js & OrbitControls from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #080a0f;
+      --panel-bg: rgba(15, 20, 32, 0.75);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --accent-color: #00f0ff;
+      --accent-gradient: linear-gradient(135deg, #00f0ff 0%, #7000ff 100%);
+      --text-main: #f0f4f8;
+      --text-muted: #94a3b8;
+      --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      --radius-lg: 16px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+    }
+
+    /* 3D Canvas Container */
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* UI Layer */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+    }
+
+    .pointer-active {
+      pointer-events: auto;
+    }
+
+    /* Header Navigation */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-lg);
+      padding: 16px 28px;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-logo i {
+      font-size: 1.6rem;
+      color: var(--accent-color);
+      -webkit-text-fill-color: initial;
+    }
+
+    .model-selector {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 6px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .model-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .model-btn.active, .model-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .model-btn.active {
+      background: var(--accent-gradient);
+      color: #fff;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--accent-color);
+      color: #000;
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+
+    /* Main Dashboard Layout */
+    .main-hud {
+      display: grid;
+      grid-template-columns: 340px 1fr 340px;
+      gap: 24px;
+      align-items: end;
+      height: calc(100% - 110px);
+    }
+
+    /* Left Panel: Specifications */
+    .specs-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--glass-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: slideInLeft 0.5s ease-out;
+    }
+
+    .car-title h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .car-title p {
+      color: var(--accent-color);
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .spec-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    .spec-box .label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .spec-box .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      color: #fff;
+    }
+
+    .price-tag {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(0,240,255,0.1) 0%, rgba(112,0,255,0.1) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+    }
+
+    .price-tag .amount {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      border: none;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 240, 255, 0.5);
+    }
+
+    /* Center Camera Presets & Interactive Actions */
+    .center-hud-bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .camera-presets {
+      display: flex;
+      gap: 10px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 8px 16px;
+      border-radius: 30px;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .cam-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .cam-btn:hover, .cam-btn.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .interactive-triggers {
+      display: flex;
+      gap: 12px;
+    }
+
+    .trigger-btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .trigger-btn:hover, .trigger-btn.active {
+      border-color: var(--accent-color);
+      background: rgba(0, 240, 255, 0.15);
+      color: var(--accent-color);
+    }
+
+    /* Right Panel: Customizer */
+    .customizer-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--glass-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideInRight 0.5s ease-out;
+    }
+
+    .customizer-card::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .customizer-card::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section-title i {
+      color: var(--accent-color);
+    }
+
+    /* Color Swatches */
+    .color-swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .swatch {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      position: relative;
+    }
+
+    .swatch:hover {
+      transform: scale(1.1);
+    }
+
+    .swatch.active {
+      border-color: #fff;
+      box-shadow: 0 0 12px var(--swatch-color);
+    }
+
+    .finish-selector {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .finish-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      padding: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .finish-btn.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-color: #fff;
+    }
+
+    /* Wheel Style Options */
+    .wheel-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .wheel-opt {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .wheel-opt.active, .wheel-opt:hover {
+      border-color: var(--accent-color);
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--accent-color);
+    }
+
+    /* Environment Selector */
+    .env-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .env-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .env-card.active, .env-card:hover {
+      border-color: var(--accent-color);
+      background: rgba(0, 240, 255, 0.1);
+      color: #fff;
+    }
+
+    /* Toast & Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: #0f1420;
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+      position: relative;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-color);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: rgba(0, 240, 255, 0.9);
+      color: #000;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.4);
+      z-index: 200;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Keyframes */
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 992px) {
+      .ui-layer {
+        padding: 12px;
+        overflow-y: auto;
+      }
+      .main-hud {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 16px;
+      }
+      .specs-card, .customizer-card {
+        max-height: none;
+      }
+      header {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- UI Overlay -->
+  <div class="ui-layer">
+    <!-- Header -->
+    <header class="pointer-active">
+      <div class="brand-logo">
+        <i class="fa-solid fa-bolt-lightning"></i> APEX MOTORS
+      </div>
+
+      <div class="model-selector">
+        <button class="model-btn active" onclick="switchCarModel(0)">APEX GT-R</button>
+        <button class="model-btn" onclick="switchCarModel(1)">CYBER HYPER</button>
+        <button class="model-btn" onclick="switchCarModel(2)">ELEKTRAN S</button>
+      </div>
+
+      <div class="header-actions">
+        <button class="action-btn" id="audio-toggle-btn" title="Toggle Engine Audio" onclick="toggleEngineSound()">
+          <i class="fa-solid fa-volume-xmark"></i>
+        </button>
+        <button class="action-btn" title="Toggle Showroom Lights" onclick="toggleShowroomLights()">
+          <i class="fa-solid fa-lightbulb"></i>
+        </button>
+        <button class="action-btn" title="Showroom Info" onclick="openModal('info')">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main HUD Controls -->
+    <div class="main-hud">
+      <!-- Left: Car Specifications Panel -->
+      <div class="specs-card pointer-active" id="specs-panel">
+        <div class="car-title">
+          <h2 id="car-name">APEX GT-R V8</h2>
+          <p id="car-tagline">Twin-Turbo Hybrid Supercar</p>
+        </div>
+
+        <div class="spec-grid">
+          <div class="spec-box">
+            <div class="label"><i class="fa-solid fa-gauge-high"></i> Top Speed</div>
+            <div class="value" id="spec-speed">217 MPH</div>
+          </div>
+          <div class="spec-box">
+            <div class="label"><i class="fa-solid fa-stopwatch"></i> 0-60 MPH</div>
+            <div class="value" id="spec-accel">2.4 sec</div>
+          </div>
+          <div class="spec-box">
+            <div class="label"><i class="fa-solid fa-horse-head"></i> Power</div>
+            <div class="value" id="spec-power">820 HP</div>
+          </div>
+          <div class="spec-box">
+            <div class="label"><i class="fa-solid fa-bolt"></i> Drivetrain</div>
+            <div class="value" id="spec-drive">AWD Hybrid</div>
+          </div>
+        </div>
+
+        <div class="price-tag">
+          <div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">STARTING AT</div>
+            <div class="amount" id="car-price">$245,000</div>
+          </div>
+          <i class="fa-solid fa-shield-halved" style="font-size:1.5rem; color:var(--accent-color);"></i>
+        </div>
+
+        <button class="btn-primary" onclick="openModal('booking')">
+          <i class="fa-solid fa-key"></i> BOOK TEST DRIVE
+        </button>
+      </div>
+
+      <!-- Center: Camera Controls & Quick Actions -->
+      <div class="center-hud-bottom pointer-active">
+        <div class="interactive-triggers">
+          <button class="trigger-btn" id="btn-headlights" onclick="toggleHeadlights()">
+            <i class="fa-solid fa-car-side"></i> Headlights
+          </button>
+          <button class="trigger-btn" id="btn-doors" onclick="toggleDoors()">
+            <i class="fa-solid fa-door-open"></i> Open Doors
+          </button>
+          <button class="trigger-btn" id="btn-underglow" onclick="toggleUnderglow()">
+            <i class="fa-solid fa-sun"></i> Underglow
+          </button>
+          <button class="trigger-btn" id="btn-rev" onclick="playEngineRev()">
+            <i class="fa-solid fa-fire-flame-curved"></i> Rev Engine
+          </button>
+        </div>
+
+        <div class="camera-presets">
+          <button class="cam-btn active" onclick="setCameraView('3d')"><i class="fa-solid fa-arrows-spin"></i> 360°</button>
+          <button class="cam-btn" onclick="setCameraView('front')"><i class="fa-solid fa-car"></i> Front</button>
+          <button class="cam-btn" onclick="setCameraView('side')"><i class="fa-solid fa-car-side"></i> Side</button>
+          <button class="cam-btn" onclick="setCameraView('rear')"><i class="fa-solid fa-car-rear"></i> Rear</button>
+          <button class="cam-btn" onclick="setCameraView('cockpit')"><i class="fa-solid fa-user-gear"></i> Interior</button>
+        </div>
+      </div>
+
+      <!-- Right: Real-time Customizer Panel -->
+      <div class="customizer-card pointer-active">
+        <!-- Exterior Color -->
+        <div>
+          <div class="section-title"><i class="fa-solid fa-palette"></i> Body Finish</div>
+          <div class="color-swatches" style="margin-top: 12px;">
+            <div class="swatch active" style="background:#0a84ff; --swatch-color:#0a84ff;" onclick="changeCarColor('#0a84ff', this)"></div>
+            <div class="swatch" style="background:#e63946; --swatch-color:#e63946;" onclick="changeCarColor('#e63946', this)"></div>
+            <div class="swatch" style="background:#10b981; --swatch-color:#10b981;" onclick="changeCarColor('#10b981', this)"></div>
+            <div class="swatch" style="background:#f59e0b; --swatch-color:#f59e0b;" onclick="changeCarColor('#f59e0b', this)"></div>
+            <div class="swatch" style="background:#8b5cf6; --swatch-color:#8b5cf6;" onclick="changeCarColor('#8b5cf6', this)"></div>
+            <div class="swatch" style="background:#111827; --swatch-color:#ffffff;" onclick="changeCarColor('#111827', this)"></div>
+            <div class="swatch" style="background:#f8fafc; --swatch-color:#ffffff;" onclick="changeCarColor('#f8fafc', this)"></div>
+            <div class="swatch" style="background:#d97706; --swatch-color:#d97706;" onclick="changeCarColor('#d97706', this)"></div>
+            <div class="swatch" style="background:#06b6d4; --swatch-color:#06b6d4;" onclick="changeCarColor('#06b6d4', this)"></div>
+            <div class="swatch" style="background:#ec4899; --swatch-color:#ec4899;" onclick="changeCarColor('#ec4899', this)"></div>
+          </div>
+
+          <div class="finish-selector">
+            <button class="finish-btn active" onclick="setPaintFinish('metallic', this)">Metallic</button>
+            <button class="finish-btn" onclick="setPaintFinish('glossy', this)">Glossy</button>
+            <button class="finish-btn" onclick="setPaintFinish('matte', this)">Matte</button>
+          </div>
+        </div>
+
+        <!-- Wheel Rim Customization -->
+        <div>
+          <div class="section-title"><i class="fa-solid fa-circle-notch"></i> Rim Style</div>
+          <div class="wheel-options" style="margin-top: 12px;">
+            <div class="wheel-opt active" onclick="changeWheelStyle(0, this)">Sport Star</div>
+            <div class="wheel-opt" onclick="changeWheelStyle(1, this)">Aero Mesh</div>
+            <div class="wheel-opt" onclick="changeWheelStyle(2, this)">Cyber Blade</div>
+          </div>
+        </div>
+
+        <!-- Underglow Light Color -->
+        <div>
+          <div class="section-title"><i class="fa-solid fa-bolt"></i> Underglow Color</div>
+          <div class="color-swatches" style="margin-top: 12px;">
+            <div class="swatch active" style="background:#00f0ff; --swatch-color:#00f0ff;" onclick="setUnderglowColor('#00f0ff', this)"></div>
+            <div class="swatch" style="background:#ff0055; --swatch-color:#ff0055;" onclick="setUnderglowColor('#ff0055', this)"></div>
+            <div class="swatch" style="background:#00ff66; --swatch-color:#00ff66;" onclick="setUnderglowColor('#00ff66', this)"></div>
+            <div class="swatch" style="background:#aa00ff; --swatch-color:#aa00ff;" onclick="setUnderglowColor('#aa00ff', this)"></div>
+            <div class="swatch" style="background:#ffaa00; --swatch-color:#ffaa00;" onclick="setUnderglowColor('#ffaa00', this)"></div>
+          </div>
+        </div>
+
+        <!-- Environment Backdrop -->
+        <div>
+          <div class="section-title"><i class="fa-solid fa-mountain-sun"></i> Atmosphere</div>
+          <div class="env-grid" style="margin-top: 12px;">
+            <div class="env-card active" onclick="setEnvironment('studio', this)"><i class="fa-solid fa-warehouse"></i> Luxury Studio</div>
+            <div class="env-card" onclick="setEnvironment('cyber', this)"><i class="fa-solid fa-city"></i> Cyber Neon</div>
+            <div class="env-card" onclick="setEnvironment('sunset', this)"><i class="fa-solid fa-sun"></i> Sunset Podium</div>
+            <div class="env-card" onclick="setEnvironment('dark', this)"><i class="fa-solid fa-moon"></i> Obsidian Dark</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Drive Booking Modal -->
+  <div class="modal-overlay" id="modal-booking">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('booking')"><i class="fa-solid fa-xmark"></i></button>
+      <h3 style="font-size:1.4rem; margin-bottom:6px;"><i class="fa-solid fa-car" style="color:var(--accent-color);"></i> Book VIP Test Drive</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Experience the thrills firsthand with an exclusive private track session.</p>
+      
+      <form onsubmit="handleBooking(event)">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" class="form-input" placeholder="e.g. Alex Morgan" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" class="form-input" placeholder="alex@example.com" required>
+        </div>
+        <div class="form-group">
+          <label>Preferred Date</label>
+          <input type="date" class="form-input" required>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:10px;">
+          CONFIRM RESERVATION
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Info Modal -->
+  <div class="modal-overlay" id="modal-info">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('info')"><i class="fa-solid fa-xmark"></i></button>
+      <h3 style="font-size:1.4rem; margin-bottom:10px;"><i class="fa-solid fa-shop" style="color:var(--accent-color);"></i> Welcome to APEX MOTORS</h3>
+      <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.6; margin-bottom:16px;">
+        This 3D Car Showroom is fully interactive, featuring real-time WebGL rendering, physics-based materials, custom dynamic studio lighting, and synthesized audio.
+      </p>
+      <ul style="color:var(--text-main); font-size:0.85rem; line-height:1.8; margin-left:20px; margin-bottom:20px;">
+        <li>Drag mouse / Touch to rotate 360° view</li>
+        <li>Scroll to Zoom in and out</li>
+        <li>Customize Paint, Rims, Underglow & Lighting</li>
+        <li>Interact with Doors and Engine Audio</li>
+      </ul>
+      <button class="btn-primary" onclick="closeModal('info')">EXPLORE SHOWROOM</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast-msg">Test Drive Reserved Successfully!</div>
+
+  <!-- Main 3D Logic Script -->
+  <script>
+    // Car Models Specification Database
+    const CAR_DATA = [
+      {
+        name: "APEX GT-R V8",
+        tagline: "Twin-Turbo Hybrid Supercar",
+        speed: "217 MPH",
+        accel: "2.4 sec",
+        power: "820 HP",
+        drive: "AWD Hybrid",
+        price: "$245,000",
+        color: "#0a84ff",
+        bodyType: "supercar"
+      },
+      {
+        name: "CYBER HYPERCLAW",
+        tagline: "Futuristic All-Electric Hypercar",
+        speed: "250 MPH",
+        accel: "1.9 sec",
+        power: "1,200 HP",
+        drive: "Tri-Motor AWD",
+        price: "$380,000",
+        color: "#10b981",
+        bodyType: "cyber"
+      },
+      {
+        name: "ELEKTRAN LUX S",
+        tagline: "Ultra-Luxury Grand Tourer",
+        speed: "195 MPH",
+        accel: "2.9 sec",
+        power: "670 HP",
+        drive: "Dual Motor EV",
+        price: "$185,000",
+        color: "#f59e0b",
+        bodyType: "roadster"
+      }
+    ];
+
+    // Global 3D Variables
+    let scene, camera, renderer, controls;
+    let currentCarGroup = null;
+    let carBodyMaterial = null;
+    let wheelMeshes = [];
+    let headlightLights = [];
+    let underglowLight = null;
+    let doorLeftGroup = null, doorRightGroup = null;
+    let doorsOpen = false;
+    let headlightsOn = true;
+    let underglowOn = true;
+    let currentModelIdx = 0;
+
+    // Showroom Lighting Elements
+    let ambientLight, mainSpotlight, rimLight, floorGrid, floorMesh;
+
+    // Audio Synth via Web Audio API
+    let audioCtx = null;
+    let engineAudioPlaying = false;
+    let engineOsc = null;
+
+    // Initialize 3D Engine on load
+    window.addEventListener('DOMContentLoaded', () => {
+      init3DScene();
+      buildCarModel(CAR_DATA[0]);
+      animate();
+    });
+
+    function init3DScene() {
+      const container = document.getElementById('canvas-container');
+
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x080a0f);
+      scene.fog = new THREE.FogExp2(0x080a0f, 0.025);
+
+      // Camera setup
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(5, 2.2, 6);
+
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.1;
+      container.appendChild(renderer.domElement);
+
+      // Orbit Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.01; // Don't clip below floor
+      controls.minDistance = 2.5;
+      controls.maxDistance = 12;
+      controls.target.set(0, 0.6, 0);
+
+      // Lighting Setup
+      ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      // Main Overhead Key Light
+      mainSpotlight = new THREE.SpotLight(0xffffff, 2.5);
+      mainSpotlight.position.set(4, 8, 4);
+      mainSpotlight.angle = Math.PI / 4;
+      mainSpotlight.penumbra = 0.8;
+      mainSpotlight.castShadow = true;
+      mainSpotlight.shadow.mapSize.width = 2048;
+      mainSpotlight.shadow.mapSize.height = 2048;
+      mainSpotlight.shadow.bias = -0.0001;
+      scene.add(mainSpotlight);
+
+      // Rim / Backdrop Accent Light
+      rimLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
+      rimLight.position.set(-5, 4, -4);
+      scene.add(rimLight);
+
+      // Additional Warm Fill Light
+      const fillLight = new THREE.PointLight(0xffaa55, 0.8, 15);
+      fillLight.position.set(0, 3, -5);
+      scene.add(fillLight);
+
+      // Build Showroom Floor & Stage
+      createShowroomFloor();
+
+      // Window Resize Listener
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function createShowroomFloor() {
+      // Reflective Mirror / Glossy Floor
+      const floorGeo = new THREE.CircleGeometry(12, 64);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x0a0d14,
+        roughness: 0.15,
+        metalness: 0.8,
+      });
+      floorMesh = new THREE.Mesh(floorGeo, floorMat);
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.receiveShadow = true;
+      scene.add(floorMesh);
+
+      // Showroom Radial Neon Stage Ring
+      const ringGeo = new THREE.RingGeometry(4.2, 4.35, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.005;
+      scene.add(ringMesh);
+
+      // Grid Pattern Overlay
+      const gridHelper = new THREE.GridHelper(24, 48, 0x00f0ff, 0x1f293d);
+      gridHelper.position.y = 0.001;
+      scene.add(gridHelper);
+    }
+
+    /* Procedural 3D Car Generator */
+    function buildCarModel(data) {
+      if (currentCarGroup) {
+        scene.remove(currentCarGroup);
+      }
+
+      currentCarGroup = new THREE.Group();
+      wheelMeshes = [];
+      headlightLights = [];
+
+      // Shared Car Materials
+      carBodyMaterial = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(data.color),
+        metalness: 0.9,
+        roughness: 0.2,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        reflectivity: 1.0
+      });
+
+      const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0x111827,
+        metalness: 0.1,
+        roughness: 0.05,
+        transmission: 0.85,
+        transparent: true,
+        opacity: 0.7
+      });
+
+      const chromeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xcccccc,
+        metalness: 0.95,
+        roughness: 0.1
+      });
+
+      const tireMaterial = new THREE.MeshStandardMaterial({
+        color: 0x151515,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+
+      const headlightGlassMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const taillightGlassMat = new THREE.MeshBasicMaterial({ color: 0xff0044 });
+
+      // Build Chassis & Body Base
+      const bodyBaseGeo = new THREE.BoxGeometry(1.9, 0.45, 4.2);
+      const bodyBaseMesh = new THREE.Mesh(bodyBaseGeo, carBodyMaterial);
+      bodyBaseMesh.position.y = 0.45;
+      bodyBaseMesh.castShadow = true;
+      bodyBaseMesh.receiveShadow = true;
+      currentCarGroup.add(bodyBaseMesh);
+
+      // Cabin / Roof Structure
+      const cabinGeo = new THREE.BoxGeometry(1.6, 0.42, 2.1);
+      const cabinMesh = new THREE.Mesh(cabinGeo, glassMaterial);
+      cabinMesh.position.set(0, 0.82, -0.2);
+      cabinMesh.castShadow = true;
+      currentCarGroup.add(cabinMesh);
+
+      // Car Hood (Aerodynamic Slanted Front)
+      const hoodGeo = new THREE.BoxGeometry(1.82, 0.18, 1.4);
+      const hoodMesh = new THREE.Mesh(hoodGeo, carBodyMaterial);
+      hoodMesh.position.set(0, 0.58, 1.3);
+      hoodMesh.rotation.x = 0.08;
+      hoodMesh.castShadow = true;
+      currentCarGroup.add(hoodMesh);
+
+      // Front Bumper Grill
+      const grillGeo = new THREE.BoxGeometry(1.7, 0.25, 0.1);
+      const grillMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.9 });
+      const grillMesh = new THREE.Mesh(grillGeo, grillMat);
+      grillMesh.position.set(0, 0.35, 2.11);
+      currentCarGroup.add(grillMesh);
+
+      // Headlights (Dual Sleek LED Strips)
+      for (let side of [-0.65, 0.65]) {
+        const hlGeo = new THREE.BoxGeometry(0.4, 0.08, 0.2);
+        const hlMesh = new THREE.Mesh(hlGeo, headlightGlassMat);
+        hlMesh.position.set(side, 0.52, 2.05);
+        currentCarGroup.add(hlMesh);
+
+        // Projector SpotLight
+        const spot = new THREE.SpotLight(0xffffff, 3, 10, Math.PI / 6, 0.5);
+        spot.position.set(side, 0.52, 2.1);
+        spot.target.position.set(side, 0, 8);
+        currentCarGroup.add(spot);
+        currentCarGroup.add(spot.target);
+        headlightLights.push(spot);
+      }
+
+      // Rear Taillight Bar
+      const tlGeo = new THREE.BoxGeometry(1.75, 0.08, 0.1);
+      const tlMesh = new THREE.Mesh(tlGeo, taillightGlassMat);
+      tlMesh.position.set(0, 0.62, -2.11);
+      currentCarGroup.add(tlMesh);
+
+      // Rear Spoiler / Wing
+      const wingBarGeo = new THREE.BoxGeometry(1.8, 0.05, 0.35);
+      const wingMesh = new THREE.Mesh(wingBarGeo, carBodyMaterial);
+      wingMesh.position.set(0, 0.98, -1.9);
+      wingMesh.castShadow = true;
+      currentCarGroup.add(wingMesh);
+
+      const wingPost1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), chromeMaterial);
+      wingPost1.position.set(-0.6, 0.82, -1.9);
+      const wingPost2 = wingPost1.clone();
+      wingPost2.position.x = 0.6;
+      currentCarGroup.add(wingPost1);
+      currentCarGroup.add(wingPost2);
+
+      // Animated Doors Structure (Left & Right)
+      doorLeftGroup = new THREE.Group();
+      doorLeftGroup.position.set(-0.95, 0.65, 0.2); // Hinge pivot point
+      const doorPanelL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 1.2), carBodyMaterial);
+      doorPanelL.position.set(0, 0, -0.5);
+      doorLeftGroup.add(doorPanelL);
+      currentCarGroup.add(doorLeftGroup);
+
+      doorRightGroup = new THREE.Group();
+      doorRightGroup.position.set(0.95, 0.65, 0.2);
+      const doorPanelR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 1.2), carBodyMaterial);
+      doorPanelR.position.set(0, 0, -0.5);
+      doorRightGroup.add(doorPanelR);
+      currentCarGroup.add(doorRightGroup);
+
+      // Underglow Light Source
+      underglowLight = new THREE.PointLight(0x00f0ff, 4, 4);
+      underglowLight.position.set(0, 0.15, 0);
+      currentCarGroup.add(underglowLight);
+
+      // Create Wheels (4 positions)
+      const wheelPositions = [
+        [-0.95, 0.35, 1.3],  // Front Left
+        [0.95, 0.35, 1.3],   // Front Right
+        [-0.95, 0.35, -1.3], // Rear Left
+        [0.95, 0.35, -1.3]   // Rear Right
+      ];
+
+      wheelPositions.forEach((pos) => {
+        const wheelGroup = new THREE.Group();
+        wheelGroup.position.set(...pos);
+
+        // Rubber Tire
+        const tireGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 32);
+        tireGeo.rotateZ(Math.PI / 2);
+        const tireMesh = new THREE.Mesh(tireGeo, tireMaterial);
+        tireMesh.castShadow = true;
+        wheelGroup.add(tireMesh);
+
+        // Alloy Rim Spokes
+        const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.26, 12);
+        rimGeo.rotateZ(Math.PI / 2);
+        const rimMesh = new THREE.Mesh(rimGeo, chromeMaterial);
+        wheelGroup.add(rimMesh);
+
+        // Brake Caliper Detail (Red Accent)
+        const caliperGeo = new THREE.BoxGeometry(0.12, 0.15, 0.1);
+        const caliperMat = new THREE.MeshStandardMaterial({ color: 0xff0022, roughness: 0.3 });
+        const caliperMesh = new THREE.Mesh(caliperGeo, caliperMat);
+        caliperMesh.position.set(pos[0] > 0 ? -0.08 : 0.08, 0.08, 0);
+        wheelGroup.add(caliperMesh);
+
+        wheelMeshes.push(rimMesh);
+        currentCarGroup.add(wheelGroup);
+      });
+
+      scene.add(currentCarGroup);
+    }
+
+    /* Animation & Render Loop */
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Subtle slow rotation idle animation when controls not actively dragged
+      if (controls && !controls.state == -1) {
+        controls.update();
+      } else {
+        controls.update();
+      }
+
+      // Rotate wheels slowly on camera move or spin
+      wheelMeshes.forEach(rim => {
+        rim.rotation.x += 0.005;
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* Interactive Customizer Functions */
+    function switchCarModel(idx) {
+      currentModelIdx = idx;
+      const data = CAR_DATA[idx];
+
+      // Update UI active buttons
+      document.querySelectorAll('.model-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+      });
+
+      // Update Spec Card Text
+      document.getElementById('car-name').innerText = data.name;
+      document.getElementById('car-tagline').innerText = data.tagline;
+      document.getElementById('spec-speed').innerText = data.speed;
+      document.getElementById('spec-accel').innerText = data.accel;
+      document.getElementById('spec-power').innerText = data.power;
+      document.getElementById('spec-drive').innerText = data.drive;
+      document.getElementById('car-price').innerText = data.price;
+
+      // Rebuild 3D Model with smooth scale animation
+      buildCarModel(data);
+      doorsOpen = false;
+      document.getElementById('btn-doors').classList.remove('active');
+    }
+
+    function changeCarColor(hexColor, element) {
+      if (carBodyMaterial) {
+        carBodyMaterial.color.set(hexColor);
+      }
+      document.querySelectorAll('.customizer-card .swatch').forEach(s => s.classList.remove('active'));
+      if(element) element.classList.add('active');
+    }
+
+    function setPaintFinish(type, btn) {
+      if (!carBodyMaterial) return;
+
+      document.querySelectorAll('.finish-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (type === 'metallic') {
+        carBodyMaterial.metalness = 0.9;
+        carBodyMaterial.roughness = 0.2;
+        carBodyMaterial.clearcoat = 1.0;
+      } else if (type === 'glossy') {
+        carBodyMaterial.metalness = 0.1;
+        carBodyMaterial.roughness = 0.05;
+        carBodyMaterial.clearcoat = 1.0;
+      } else if (type === 'matte') {
+        carBodyMaterial.metalness = 0.2;
+        carBodyMaterial.roughness = 0.85;
+        carBodyMaterial.clearcoat = 0.0;
+      }
+    }
+
+    function changeWheelStyle(styleIdx, el) {
+      document.querySelectorAll('.wheel-opt').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+
+      const rimColor = styleIdx === 0 ? 0xcccccc : (styleIdx === 1 ? 0x111111 : 0xd97706);
+      wheelMeshes.forEach(rim => {
+        rim.material.color.setHex(rimColor);
+        rim.material.metalness = styleIdx === 1 ? 0.4 : 0.95;
+      });
+    }
+
+    function setUnderglowColor(hexColor, el) {
+      if (underglowLight) {
+        underglowLight.color.set(hexColor);
+      }
+      el.parentElement.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function toggleHeadlights() {
+      headlightsOn = !headlightsOn;
+      const btn = document.getElementById('btn-headlights');
+      btn.classList.toggle('active', headlightsOn);
+
+      headlightLights.forEach(light => {
+        light.intensity = headlightsOn ? 3 : 0;
+      });
+    }
+
+    function toggleDoors() {
+      doorsOpen = !doorsOpen;
+      const btn = document.getElementById('btn-doors');
+      btn.classList.toggle('active', doorsOpen);
+
+      const targetAngleL = doorsOpen ? Math.PI / 3 : 0;
+      const targetAngleR = doorsOpen ? -Math.PI / 3 : 0;
+
+      // Smooth Door Rotation Animation
+      let startTime = performance.now();
+      const initialL = doorLeftGroup.rotation.y;
+      const initialR = doorRightGroup.rotation.y;
+
+      function animateDoor(now) {
+        let elapsed = (now - startTime) / 400; // 400ms duration
+        if (elapsed > 1) elapsed = 1;
+
+        doorLeftGroup.rotation.y = THREE.MathUtils.lerp(initialL, targetAngleL, elapsed);
+        doorRightGroup.rotation.y = THREE.MathUtils.lerp(initialR, targetAngleR, elapsed);
+
+        if (elapsed < 1) {
+          requestAnimationFrame(animateDoor);
+        }
+      }
+      requestAnimationFrame(animateDoor);
+    }
+
+    function toggleUnderglow() {
+      underglowOn = !underglowOn;
+      const btn = document.getElementById('btn-underglow');
+      btn.classList.toggle('active', underglowOn);
+      if (underglowLight) {
+        underglowLight.intensity = underglowOn ? 4 : 0;
+      }
+    }
+
+    function setCameraView(preset) {
+      document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      let targetPos = { x: 5, y: 2.2, z: 6 };
+      let targetLookAt = { x: 0, y: 0.6, z: 0 };
+
+      if (preset === 'front') {
+        targetPos = { x: 0, y: 1.2, z: 5.5 };
+      } else if (preset === 'side') {
+        targetPos = { x: 5.5, y: 1.2, z: 0 };
+      } else if (preset === 'rear') {
+        targetPos = { x: 0, y: 1.5, z: -5.5 };
+      } else if (preset === 'cockpit') {
+        targetPos = { x: -0.3, y: 0.9, z: 0.1 };
+        targetLookAt = { x: 0, y: 0.7, z: 2 };
+      }
+
+      // Smooth Camera Interpolation
+      const startPos = { ...camera.position };
+      const startLook = { ...controls.target };
+      let startTime = performance.now();
+
+      function lerpCam(now) {
+        let t = (now - startTime) / 800;
+        if (t > 1) t = 1;
+        // Ease Out Cubic
+        t = 1 - Math.pow(1 - t, 3);
+
+        camera.position.x = THREE.MathUtils.lerp(startPos.x, targetPos.x, t);
+        camera.position.y = THREE.MathUtils.lerp(startPos.y, targetPos.y, t);
+        camera.position.z = THREE.MathUtils.lerp(startPos.z, targetPos.z, t);
+
+        controls.target.x = THREE.MathUtils.lerp(startLook.x, targetLookAt.x, t);
+        controls.target.y = THREE.MathUtils.lerp(startLook.y, targetLookAt.y, t);
+        controls.target.z = THREE.MathUtils.lerp(startLook.z, targetLookAt.z, t);
+
+        if (t < 1) {
+          requestAnimationFrame(lerpCam);
+        }
+      }
+      requestAnimationFrame(lerpCam);
+    }
+
+    function setEnvironment(env, card) {
+      document.querySelectorAll('.env-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+
+      if (env === 'studio') {
+        scene.background.setHex(0x080a0f);
+        scene.fog.color.setHex(0x080a0f);
+        mainSpotlight.color.setHex(0xffffff);
+        rimLight.color.setHex(0x00f0ff);
+        floorMesh.material.color.setHex(0x0a0d14);
+      } else if (env === 'cyber') {
+        scene.background.setHex(0x05020c);
+        scene.fog.color.setHex(0x05020c);
+        mainSpotlight.color.setHex(0xff0077);
+        rimLight.color.setHex(0x00ffff);
+        floorMesh.material.color.setHex(0x0f051d);
+      } else if (env === 'sunset') {
+        scene.background.setHex(0x1a0b18);
+        scene.fog.color.setHex(0x1a0b18);
+        mainSpotlight.color.setHex(0xff7700);
+        rimLight.color.setHex(0xff0055);
+        floorMesh.material.color.setHex(0x1c0d12);
+      } else if (env === 'dark') {
+        scene.background.setHex(0x020203);
+        scene.fog.color.setHex(0x020203);
+        mainSpotlight.color.setHex(0x999999);
+        rimLight.color.setHex(0x333333);
+        floorMesh.material.color.setHex(0x040406);
+      }
+    }
+
+    function toggleShowroomLights() {
+      mainSpotlight.visible = !mainSpotlight.visible;
+      rimLight.visible = !rimLight.visible;
+    }
+
+    /* Web Audio API Procedural Engine Sound */
+    function toggleEngineSound() {
+      const btn = document.getElementById('audio-toggle-btn');
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      if (engineAudioPlaying) {
+        if (engineOsc) engineOsc.stop();
+        engineAudioPlaying = false;
+        btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+      } else {
+        startEngineSound();
+        engineAudioPlaying = true;
+        btn.innerHTML = '<i class="fa-solid fa-volume-high" style="color:var(--accent-color);"></i>';
+      }
+    }
+
+    function startEngineSound() {
+      if (!audioCtx) return;
+      engineOsc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      engineOsc.type = 'sawtooth';
+      engineOsc.frequency.setValueAtTime(55, audioCtx.currentTime); // Low idle rumble
+
+      gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+      engineOsc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      engineOsc.start();
+    }
+
+    function playEngineRev() {
+      showToast("🔊 Engine Revved!");
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      const revOsc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      revOsc.type = 'sawtooth';
+      revOsc.frequency.setValueAtTime(60, audioCtx.currentTime);
+      revOsc.frequency.exponentialRampToValueAtTime(320, audioCtx.currentTime + 0.4);
+      revOsc.frequency.exponentialRampToValueAtTime(70, audioCtx.currentTime + 1.2);
+
+      gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+
+      revOsc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      revOsc.start();
+      revOsc.stop(audioCtx.currentTime + 1.2);
+    }
+
+    /* Modal & UI Handlers */
+    function openModal(id) {
+      document.getElementById('modal-' + id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById('modal-' + id).classList.remove('active');
+    }
+
+    function handleBooking(e) {
+      e.preventDefault();
+      closeModal('booking');
+      showToast("🎉 VIP Test Drive Reservation Confirmed!");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-msg');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+  </script>
+</body>
+</html>
+```
